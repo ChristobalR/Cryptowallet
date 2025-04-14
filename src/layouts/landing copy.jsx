@@ -32,7 +32,6 @@ import {
   Shield,
   Menu as MenuIcon,
 } from "@mui/icons-material"
-import { useNavigate } from "react-router-dom"
 
 // Mock data for demonstration
 const mockPrices = {
@@ -89,7 +88,7 @@ const Landing = () => {
       maximumFractionDigits: 2,
     })
   }
-   const navigate = useNavigate()
+
   const handleLogin = () => {
     setIsLoggedIn(true)
   }
@@ -99,7 +98,7 @@ const Landing = () => {
   }
 
   const handleNavigate = (path) => {
-    navigate("/wallet")
+    console.log(`Navigating to: ${path}`)
     // In a real app, this would use router navigation
   }
 
@@ -124,7 +123,7 @@ const Landing = () => {
               <Button color="inherit" onClick={() => handleNavigate("/market")} sx={{ color: "#ffffff" }}>
                 Market
               </Button>
-              <Button color="inherit" onClick={() => handleNavigate("/wallet")} sx={{ color: "#ffffff" }}>
+              <Button color="inherit" onClick={() => handleNavigate("/portfolio")} sx={{ color: "#ffffff" }}>
                 Portfolio
               </Button>
               {isLoggedIn ? (
@@ -176,7 +175,7 @@ const Landing = () => {
             <Button
               fullWidth
               color="inherit"
-              onClick={() => handleNavigate("/wallet")}
+              onClick={() => handleNavigate("/portfolio")}
               sx={{ justifyContent: "flex-start", py: 1, color: "#ffffff" }}
             >
               Portfolio

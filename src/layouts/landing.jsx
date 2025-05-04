@@ -34,55 +34,35 @@ import {
 } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
 
-// Mock data for demonstration
-const mockPrices = {
-  bitcoin: { usd: 65432.1, change: 2.5 },
-  ethereum: { usd: 3456.78, change: -1.2 },
-  cardano: { usd: 1.23, change: 0.8 },
-  solana: { usd: 123.45, change: 5.7 },
-  polkadot: { usd: 21.87, change: -0.5 },
-  dogecoin: { usd: 0.12, change: 3.2 },
-}
+import useFetchPrices from "../hooks/fetchPrices"
 
 const Landing = () => {
-  const [prices, setPrices] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { prices, loading, error } = useFetchPrices() // Usar hook real
   const [highlightedPrice, setHighlightedPrice] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
-  // Simulate logged in state - in a real app, this would come from auth context
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const logged = localStorage.getItem("logged") === "true"
+  
+  console.log(logged)
+
+  const [isLoggedIn, setIsLoggedIn] = useState(logged)
+
+  console.log(isLoggedIn)
+
   const [userData, setUserData] = useState({ user: { firstName: "Alex" } })
 
   useEffect(() => {
-    // Simulate API call to fetch prices
-    const fetchPrices = async () => {
-      try {
-        // In a real app, this would be an API call
-        setTimeout(() => {
-          setPrices(mockPrices)
-          setLoading(false)
-        }, 1500)
-      } catch (err) {
-        setError("Failed to fetch cryptocurrency prices")
-        setLoading(false)
-      }
-    }
-
-    fetchPrices()
-
-    // Simulate price updates
     const interval = setInterval(() => {
-      setHighlightedPrice(Math.floor(Math.random() * Object.keys(mockPrices).length))
-      setTimeout(() => setHighlightedPrice(null), 1000)
+      if (prices && Object.keys(prices).length > 0) {
+        setHighlightedPrice(Math.floor(Math.random() * Object.keys(prices).length))
+        setTimeout(() => setHighlightedPrice(null), 1000)
+      }
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [])
-
+  }, [prices])
   const formatPrice = (price) => {
     return Number.parseFloat(price).toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -91,11 +71,13 @@ const Landing = () => {
   }
    const navigate = useNavigate()
   const handleLogin = () => {
-    setIsLoggedIn(true)
+    navigate("/login")
   }
 
   const handleLogout = () => {
-    setIsLoggedIn(false)
+    localStorage.removeItem("token")
+    localStorage.removeItem("logged") // opcional, si usas esto también
+    window.location.href = "/"
   }
 
   const handleNavigate = (path) => {
@@ -328,7 +310,7 @@ const Landing = () => {
                   alt="Cryptocurrency Dashboard"
                   sx={{
                     maxWidth: "100%",
-                    height: "auto",
+                    height: {xs: "300px", md: "500px"},
                     borderRadius: "12px",
                    
                     transform: "perspective(1000px) rotateY(-10deg)",
@@ -433,17 +415,8 @@ const Landing = () => {
                       ${formatPrice(value.usd)}
                     </Typography>
 
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        color: value.change >= 0 ? "#4CAF50" : "#F44336",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {value.change >= 0 ? "+" : ""}
-                      {value.change}%
-                    </Typography>
-
+                   
+            
                     <Button
                       variant="outlined"
                       fullWidth

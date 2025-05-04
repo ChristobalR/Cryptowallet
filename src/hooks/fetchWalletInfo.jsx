@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const useBitcoinWalletInfo = (publicKey) => {
+const useBitcoinWalletInfo = (address) => {
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,32 +9,38 @@ const useBitcoinWalletInfo = (publicKey) => {
   useEffect(() => {
     const getBitcoinPrice = async () => {
       try {
-        const response = await fetch('https://api.coindesk.com/v1/bpi/currentprice/BTC.json');
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
         const data = await response.json();
-        return data.bpi.USD.rate_float;
+        return data.bitcoin.usd;
       } catch (error) {
         console.error('Error al obtener el precio de Bitcoin:', error);
         throw new Error('Error al obtener el precio de Bitcoin');
       }
+    
     };
 
     const getWalletInfo = async () => {
       try {
-        const response = await fetch(`https://api.blockcypher.com/v1/btc/main/addrs/${publicKey}`);
-        const data = await response.json();
         const bitcoinPrice = await getBitcoinPrice();
 
-        const balanceBTC = data.final_balance / 100000000; // De satoshis a BTC
-        const balanceUSD = balanceBTC * bitcoinPrice;
+        const response = await fetch(`https://blockstream.info/api/address/${address}`);
+        const data = await response.json();
 
-        const lastTransactions = data.txrefs?.slice(0, 3).map((tx) => {
-          const amountBTC = tx.value / 100000000;
-          const amountUSD = amountBTC * bitcoinPrice;
+        const balanceBTC = data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum;
+        const balanceBTCFinal = balanceBTC / 100000000;
+        const balanceUSD = balanceBTCFinal * bitcoinPrice;
+
+        const txsResponse = await fetch(`https://blockstream.info/api/address/${address}/txs`);
+        const txs = await txsResponse.json();
+
+        const lastTransactions = txs.slice(0, 3).map(tx => {
+          const output = tx.vout.find(v => v.scriptpubkey_address === address);
+          const valueBTC = output?.value ? output.value / 100000000 : 0;
           return {
-            amountUSD: amountUSD.toFixed(2),
-            date: new Date(tx.confirmed).toLocaleString(),
+            amountUSD: (valueBTC * bitcoinPrice).toFixed(2),
+            date: new Date(tx.status.block_time * 1000).toLocaleString(),
           };
-        }) || [];
+        });
 
         setBalance(balanceUSD.toFixed(2));
         setTransactions(lastTransactions);
@@ -45,10 +51,10 @@ const useBitcoinWalletInfo = (publicKey) => {
       }
     };
 
-    if (publicKey) {
+    if (address) {
       getWalletInfo();
     }
-  }, [publicKey]);
+  }, [address]);
 
   return { balance, transactions, loading, error };
 };
